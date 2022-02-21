@@ -71,7 +71,6 @@ class GCNResnet(nn.Module):
         feature = self.pooling(feature)
         feature = feature.view(feature.size(0), -1)
 
-
         inp = inp[0]
         adj = gen_adj(self.A).detach()
         x = self.gc1(inp, adj)
@@ -92,5 +91,6 @@ class GCNResnet(nn.Module):
 
 
 def gcn_resnet101(num_classes, t, pretrained=False, adj_file=None, in_channel=300):
+    print(pretrained)
     model = models.resnet101(pretrained=pretrained)
     return GCNResnet(model, num_classes, t=t, adj_file=adj_file, in_channel=in_channel)

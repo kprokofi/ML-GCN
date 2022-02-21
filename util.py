@@ -291,14 +291,21 @@ class AveragePrecisionMeter(object):
 def gen_A(num_classes, t, adj_file):
     import pickle
     result = pickle.load(open(adj_file, 'rb'))
+    rho = 0.8
     _adj = result['adj']
     _nums = result['nums']
     _nums = _nums[:, np.newaxis]
+    adj2 = np.load("/ssd/deep-object-reid/glove/voc_adj_matrix_M_all.npy")
+    # _adj = adj2
     _adj = _adj / _nums
+    # _adj = adj2
     _adj[_adj < t] = 0
     _adj[_adj >= t] = 1
-    _adj = _adj * 0.25 / (_adj.sum(0, keepdims=True) + 1e-6)
-    _adj = _adj + np.identity(num_classes, np.int)
+    # tau = np.percentile(_adj, 25)
+    # _adj[_adj < tau] = 0
+    # _adj[_adj >= t] = 1
+    # _adj = _adj * rho / (_adj.sum(0, keepdims=True) + 1e-6)
+    # _adj = _adj + np.identity(num_classes, np.int)
     return _adj
 
 def gen_adj(A):

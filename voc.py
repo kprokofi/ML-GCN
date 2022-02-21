@@ -255,7 +255,6 @@ class Voc2007Classification(data.Dataset):
             img = self.transform(img)
         if self.target_transform is not None:
             target = self.target_transform(target)
-
         return (img, path, self.inp), target
 
     def __len__(self):

@@ -10,15 +10,15 @@ parser.add_argument('--image-size', '-i', default=224, type=int,
                     metavar='N', help='image size (default: 224)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=20, type=int, metavar='N',
+parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('--epoch_step', default=[30], type=int, nargs='+',
+parser.add_argument('--epoch_step', default=[40, 80], type=int, nargs='+',
                     help='number of epochs to change learning rate')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=16, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
-parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
+parser.add_argument('--lr', '--learning-rate', default=0.05, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lrp', '--learning-rate-pretrained', default=0.1, type=float,
                     metavar='LR', help='learning rate for pre-trained layers')
@@ -35,6 +35,13 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
 
 
 def main_voc2007():
+    torch.manual_seed(5)
+    torch.cuda.manual_seed_all(5)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(5)
+    random.seed(5)
+    os.environ['PYTHONHASHSEED'] = str(5)
     global args, best_prec1, use_gpu
     args = parser.parse_args()
 
@@ -47,7 +54,7 @@ def main_voc2007():
     num_classes = 20
 
     # load model
-    model = gcn_resnet101(num_classes=num_classes, t=0.4, adj_file='data/voc/voc_adj.pkl')
+    model = gcn_resnet101(num_classes=num_classes, t=0.4, pretrained=True, adj_file='data/voc/voc_adj.pkl')
 
     # define loss function (criterion)
     criterion = nn.MultiLabelSoftMarginLoss()

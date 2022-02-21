@@ -77,7 +77,7 @@ class Engine(object):
     def on_end_batch(self, training, model, criterion, data_loader, optimizer=None, display=True):
 
         # record loss
-        self.state['loss_batch'] = self.state['loss'].data[0]
+        self.state['loss_batch'] = self.state['loss'].data.cpu()
         self.state['meter_loss'].add(self.state['loss_batch'])
 
         if display and self.state['print_freq'] != 0 and self.state['iteration'] % self.state['print_freq'] == 0:
@@ -108,14 +108,14 @@ class Engine(object):
         target_var = torch.autograd.Variable(self.state['target'])
 
         if not training:
-            input_var.volatile = True
-            target_var.volatile = True
-
-        # compute output
-        self.state['output'] = model(input_var)
-        self.state['loss'] = criterion(self.state['output'], target_var)
+            with torch.no_grad():
+                # compute output
+                self.state['output'] = model(input_var)
+                self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
+            self.state['output'] = model(input_var)
+            self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
             self.state['loss'].backward()
             optimizer.step()
@@ -239,7 +239,7 @@ class Engine(object):
             self.on_start_batch(True, model, criterion, data_loader, optimizer)
 
             if self.state['use_gpu']:
-                self.state['target'] = self.state['target'].cuda(async=True)
+                self.state['target'] = self.state['target'].cuda(non_blocking=True)
 
             self.on_forward(True, model, criterion, data_loader, optimizer)
 
@@ -275,7 +275,7 @@ class Engine(object):
             self.on_start_batch(False, model, criterion, data_loader)
 
             if self.state['use_gpu']:
-                self.state['target'] = self.state['target'].cuda(async=True)
+                self.state['target'] = self.state['target'].cuda(non_blocking=True)
 
             self.on_forward(False, model, criterion, data_loader)
 
@@ -410,18 +410,17 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
         target_var = torch.autograd.Variable(self.state['target']).float()
         inp_var = torch.autograd.Variable(self.state['input']).float().detach()  # one hot
         if not training:
-            feature_var.volatile = True
-            target_var.volatile = True
-            inp_var.volatile = True
-
-        # compute output
-        self.state['output'] = model(feature_var, inp_var)
-        self.state['loss'] = criterion(self.state['output'], target_var)
+            with torch.no_grad():
+                # compute output
+                self.state['output'] = model(feature_var, inp_var)
+                self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
+            self.state['output'] = model(feature_var, inp_var)
+            self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
             self.state['loss'].backward()
-            nn.utils.clip_grad_norm(model.parameters(), max_norm=10.0)
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
 
@@ -435,4 +434,3 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
         self.state['feature'] = input[0]
         self.state['out'] = input[1]
         self.state['input'] = input[2]
-
